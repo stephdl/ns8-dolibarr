@@ -7,6 +7,9 @@
 
 set -e
 
+# The dump holds the password hashes and the encrypted LDAP and SMTP credentials
+umask 077
+
 if ! systemctl --user -q is-active mariadb-app.service; then
     exit 0
 fi
