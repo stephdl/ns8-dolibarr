@@ -68,7 +68,7 @@ Check services are running
     ${status} =    Run task    module/${module_id}/get-status    null
     FOR    ${service}    IN    @{status['services']}
         # Oneshot units started by their timer are inactive between runs
-        IF    $service['name'] in ['dolibarr-ldap-sync', 'dolibarr-cron']    CONTINUE
+        IF    $service['name'] in ['dolibarr-ldap-sync', 'dolibarr-cron', 'dolibarr-apply-config']    CONTINUE
         Should Be True    ${service['active']}    ${service['name']} is not active
     END
 
