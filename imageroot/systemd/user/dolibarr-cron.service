@@ -1,0 +1,16 @@
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+[Unit]
+Description=Run the Dolibarr scheduled jobs
+Requisite=dolibarr-app.service
+After=dolibarr-app.service
+
+[Service]
+Type=oneshot
+SyslogIdentifier=%N
+# The key comes from the container environment, never from the command line
+ExecStart=/usr/bin/podman exec -u www-data -w /var/www/scripts/cron dolibarr-app \
+    /bin/sh -c 'exec php cron_run_jobs.php "$$DOLI_CRON_KEY" admin'

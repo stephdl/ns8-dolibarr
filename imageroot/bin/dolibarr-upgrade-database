@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# The image entrypoint migrates the database only when install.lock is missing,
+# so the module runs the Dolibarr upgrade scripts itself, once per new version.
+# Called by dolibarr-apply-config once Apache answers, so a stopped app catches up at start.
+
+set -e
+
+exec 1>&2
+
+podman exec -i -u www-data dolibarr-app sh -s <<'EOS'
+set -e
+cd /var/www/html/install
+
+db_version=$(php -r '
+    define("NOREQUIREUSER", 1);
+    define("NOREQUIRETRAN", 1);
+    require "/var/www/html/master.inc.php";
+    echo getDolGlobalString("MAIN_VERSION_LAST_UPGRADE", getDolGlobalString("MAIN_VERSION_LAST_INSTALL"));
+')
+if [ -z "${db_version}" ] || [ "${db_version}" = "${DOLI_VERSION}" ]; then
+    echo "Dolibarr database version ${db_version:-unknown}, files ${DOLI_VERSION}: no upgrade needed"
+    exit 0
+fi
+
+echo "Upgrading the Dolibarr database from ${db_version} to ${DOLI_VERSION}"
+# The upgrade scripts refuse to run while install.lock exists without this file
+touch /var/www/documents/upgrade.unlock
+trap 'rm -f /var/www/documents/upgrade.unlock' EXIT
+log=/var/www/documents/ns8-upgrade.log
+: > "${log}"
+for script in upgrade.php upgrade2.php step5.php; do
+    if ! php "${script}" "${db_version}" "${DOLI_VERSION}" >> "${log}" 2>&1; then
+        echo "Dolibarr ${script} failed, see documents/ns8-upgrade.log. The dump taken before the update is state/dolibarr-before-update.sql"
+        exit 1
+    fi
+done
+echo "Dolibarr database upgraded to ${DOLI_VERSION}"
+EOS

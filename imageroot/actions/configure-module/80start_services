@@ -1,17 +1,31 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2023 Nethesis S.r.l.
+# Copyright (C) 2026 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
+
 set -e
 
 # Redirect any output to the journal (stderr)
 exec 1>&2
 
-# If the control reaches this step, the service can be enabled and started
-
-touch smarthost.env
+# The pod host name is the SMTP EHLO name and the URL root: recreate the pod when it changes
+running=$(podman inspect dolibarr-app --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -E '^NS8_POD_HOSTNAME=' | sort | tr '\n' ' ' || :)
+wanted="NS8_POD_HOSTNAME=${TRAEFIK_HOST} "
+if [[ -n "${running}" && "${running}" != "${wanted}" ]]; then
+    systemctl --user stop dolibarr.service
+fi
 
 systemctl --user enable dolibarr.service
-systemctl --user restart dolibarr.service
+systemctl --user start dolibarr.service mariadb-app.service dolibarr-app.service
+systemctl --user enable --now dolibarr-cron.timer
+
+if [[ "${LDAP_SYNC}" == "True" ]]; then
+    systemctl --user enable --now dolibarr-ldap-sync.timer
+else
+    systemctl --user disable --now dolibarr-ldap-sync.timer
+fi
+
+# Waits for the run started with dolibarr-app, if any, and fails the action if it fails
+systemctl --user start dolibarr-apply-config.service

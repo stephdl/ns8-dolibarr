@@ -1,0 +1,14 @@
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+[Unit]
+Description=Synchronize Dolibarr users with the NS8 user domain
+Requisite=dolibarr-app.service
+After=dolibarr-app.service
+
+[Service]
+Type=oneshot
+SyslogIdentifier=%N
+ExecStart=runagent dolibarr-apply-config --sync

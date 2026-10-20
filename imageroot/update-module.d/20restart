@@ -1,15 +1,19 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2023 Nethesis S.r.l.
+# Copyright (C) 2026 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-
-# If the control reaches this step, the service can be enabled and started
 
 set -e
 
 # Redirect any output to the journal (stderr)
 exec 1>&2
 
-systemctl --user try-restart dolibarr.service
+was_active=$(systemctl --user is-active dolibarr-app.service || :)
+systemctl --user try-restart dolibarr.service mariadb-app.service dolibarr-app.service
+# try-restart returns before the pod restarts its children: wait for them,
+# the next steps need a running app. A stopped module stays stopped.
+if [[ "${was_active}" == "active" ]]; then
+    systemctl --user start dolibarr.service mariadb-app.service dolibarr-app.service
+fi

@@ -1,19 +1,29 @@
 {
-  "name": "dolibarr",
+  "name": "Dolibarr",
+  "upstream_name": "Dolibarr version set automatically",
   "description": {
-    "en": "My dolibarr module"
+    "en": "ERP and CRM for small businesses: customers, quotes, invoices, stock and projects, with domain user login and email.",
+    "fr": "ERP et CRM pour les petites entreprises : clients, devis, factures, stock et projets, avec connexion des utilisateurs du domaine et envoi d'emails.",
+    "it": "ERP e CRM per piccole imprese: clienti, preventivi, fatture, magazzino e progetti, con accesso degli utenti del dominio ed email.",
+    "de": "ERP und CRM für kleine Unternehmen: Kunden, Angebote, Rechnungen, Lager und Projekte, mit Anmeldung der Domänenbenutzer und E-Mail.",
+    "es": "ERP y CRM para pequeñas empresas: clientes, presupuestos, facturas, stock y proyectos, con inicio de sesión de usuarios del dominio y correo.",
+    "pt": "ERP e CRM para pequenas empresas: clientes, orçamentos, faturas, stock e projetos, com início de sessão dos utilizadores do domínio e email.",
+    "pt_BR": "ERP e CRM para pequenas empresas: clientes, orçamentos, faturas, estoque e projetos, com login dos usuários do domínio e e-mail.",
+    "eu": "Enpresa txikientzako ERP eta CRM: bezeroak, aurrekontuak, fakturak, stocka eta proiektuak, domeinuko erabiltzaileen saio hasierarekin eta posta elektronikoarekin."
   },
-  "categories": [],
+  "categories": [
+    "collaboration"
+  ],
   "authors": [
     {
-      "name": "Name Surname",
-      "email": "author@yourmail.org"
+      "name": "Stephane de Labrusse",
+      "email": "stephdl@de-labrusse.fr"
     }
   ],
   "docs": {
-    "documentation_url": "https://docs.dolibarr.com/",
-    "bug_url": "https://github.com/NethServer/dev",
-    "code_url": "https://github.com/author/ns8-dolibarr"
+    "documentation_url": "https://github.com/stephdl/ns8-dolibarr#readme",
+    "bug_url": "https://github.com/stephdl/dev/issues",
+    "code_url": "https://github.com/stephdl/ns8-dolibarr"
   },
-  "source": "ghcr.io/nethserver/dolibarr"
+  "source": "ghcr.io/stephdl/dolibarr"
 }

@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+import os
+import sys
+import json
+import agent
+
+event = json.load(sys.stdin)
+
+# "domain" is obsolete since core 3.16.0, newer events carry "domains"
+if os.getenv('USER_DOMAIN') not in {event.get('domain')} | set(event.get('domains', [])):
+    sys.exit(0)
+
+agent.run_helper('runagent', 'dolibarr-apply-config').check_returncode()

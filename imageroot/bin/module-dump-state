@@ -1,21 +1,24 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2022 Nethesis S.r.l.
+# Copyright (C) 2026 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
 set -e
 
-if ! systemctl --user -q is-active dolibarr.service; then
+# The dump holds the password hashes and the encrypted LDAP and SMTP credentials
+umask 077
+
+if ! systemctl --user -q is-active mariadb-app.service; then
     exit 0
 fi
 
-podman exec mariadb-app mysqldump \
+podman exec mariadb-app sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" exec mariadb-dump -uroot \
         --databases dolibarr \
         --default-character-set=utf8mb4 \
         --skip-dump-date \
-        --ignore-table=mysql.event \
         --single-transaction \
         --quick \
-        --add-drop-table  > dolibarr.sql
+        --routines \
+        --add-drop-table' > dolibarr.sql

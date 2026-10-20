@@ -14,6 +14,21 @@ images=()
 repobase="${REPOBASE:-ghcr.io/nethserver}"
 # Configure the image name
 reponame="dolibarr"
+dolibarr_image="docker.io/dolibarr/dolibarr:24.0.2"
+mariadb_image="docker.io/mariadb:12.3.3"
+
+# Show the Dolibarr version in the About page: the module version does not tell it
+metadata_file="ui/public/metadata.json"
+metadata_backup=$(mktemp)
+cleanup() {
+    cp "${metadata_backup}" "${metadata_file}"
+    rm -f "${metadata_backup}"
+}
+cp "${metadata_file}" "${metadata_backup}"
+trap cleanup EXIT
+jq --arg v "${dolibarr_image##*:}" \
+   '.upstream_name |= gsub("version set automatically"; $v)' \
+   "${metadata_file}" > "${metadata_file}.tmp" && mv "${metadata_file}.tmp" "${metadata_file}"
 
 # Create a new empty container image
 container=$(buildah from scratch)
@@ -36,11 +51,12 @@ buildah add "${container}" imageroot /imageroot
 buildah add "${container}" ui/dist /ui
 
 buildah config --entrypoint=/ \
-    --label="org.nethserver.authorizations=traefik@node:routeadm" \
+    --label="org.nethserver.authorizations=traefik@node:routeadm cluster:accountconsumer" \
     --label="org.nethserver.tcp-ports-demand=1" \
     --label="org.nethserver.rootfull=0" \
     --label="org.nethserver.min-core=3.20.1" \
-    --label="org.nethserver.images=docker.io/mariadb:10.11.19 docker.io/nginx:1.30.5-alpine" \
+    --label="org.nethserver.images=${mariadb_image} ${dolibarr_image}" \
+    --label="org.nethserver.volumes=dolibarr-documents" \
     "${container}"
 # Commit the image
 buildah commit "${container}" "${repobase}/${reponame}"

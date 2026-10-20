@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+import os
+import sys
+import json
+import agent
+from agent.ldapproxy import Ldapproxy
+
+request = json.load(sys.stdin)
+renv = request['environment']
+
+user_domain = renv.get("USER_DOMAIN", "")
+admin_group = renv.get("ADMIN_GROUP", "")
+if user_domain and user_domain not in Ldapproxy().get_domains_list():
+    print(agent.SD_WARNING + f"User domain {user_domain} not found, LDAP login disabled. Dolibarr local accounts still work", file=sys.stderr)
+    user_domain = admin_group = ""
+
+configure_retval = agent.tasks.run(agent_id=os.environ['AGENT_ID'], action='configure-module', data={
+    "host": renv["TRAEFIK_HOST"],
+    "lets_encrypt": renv.get("TRAEFIK_LETS_ENCRYPT") == "True",
+    "user_domain": user_domain,
+    "admin_group": admin_group,
+    "ldap_sync": renv.get("LDAP_SYNC") == "True",
+    "mail_from": renv.get("MAIL_FROM", ""),
+    "language": renv.get("DOLIBARR_LANGUAGE", "auto"),
+})
+agent.assert_exp(configure_retval['exit_code'] == 0, "The configure-module subtask failed!")

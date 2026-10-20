@@ -2,5 +2,31 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>NethServer/.github:ns8-automerge"
+  ],
+  "packageRules": [
+    {
+      "description": "Stay on the MariaDB 12.3 LTS branch, a major upgrade needs a dump and restore",
+      "matchDepNames": [
+        "mariadb"
+      ],
+      "allowedVersions": "/^12\\.3\\./"
+    },
+    {
+      "description": "Only plain x.y.z Dolibarr tags, not -phpX.Y variants or floating tags",
+      "matchDepNames": [
+        "dolibarr/dolibarr"
+      ],
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
+    },
+    {
+      "description": "A Dolibarr major upgrade migrates the database and can break custom modules: review it by hand",
+      "matchDepNames": [
+        "dolibarr/dolibarr"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
+    }
   ]
 }

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2022 Nethesis S.r.l.
+# Copyright (C) 2026 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
@@ -7,31 +7,28 @@
 Description=Podman mariadb-app.service
 BindsTo=dolibarr.service
 After=dolibarr.service
+Before=dolibarr-app.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 EnvironmentFile=%S/state/environment
-# EnvironmentFile=%S/state/secrets/passwords.secret
 Restart=always
 TimeoutStopSec=70
 ExecStartPre=/bin/rm -f %t/mariadb-app.pid %t/mariadb-app.ctr-id
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/mariadb-app.pid \
     --cidfile %t/mariadb-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/dolibarr.pod-id --replace -d --name mariadb-app \
-    --env-file=%S/state/environment \
     --volume mysql-data:/var/lib/mysql/:Z \
-    --env MARIADB_ROOT_PASSWORD=Nethesis,1234 \
+    --env-file=%S/state/secrets/mariadb.env \
     --env MARIADB_DATABASE=dolibarr \
     --env MARIADB_USER=dolibarr \
-    --env MARIADB_PASSWORD=dolibarr \
     --env MARIADB_AUTO_UPGRADE=1 \
     ${MARIADB_IMAGE} \
     --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-ExecStartPost=/usr/bin/podman exec  mariadb-app /bin/bash -c 'printf "[client] \npassword=Nethesis,1234" > /root/.my.cnf'
-ExecStartPost=/usr/bin/podman exec mariadb-app /bin/bash -c "while ! mysqladmin ping -h localhost -P 3306 -u root; do sleep 1; done"
+# ping succeeds as soon as the server answers, whatever the credentials: no password needed
+ExecStartPost=/usr/bin/podman exec mariadb-app /bin/sh -c 'until mariadb-admin ping -h127.0.0.1 --protocol=tcp --skip-ssl --silent; do sleep 1; done'
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/mariadb-app.ctr-id -t 10
 ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/mariadb-app.ctr-id
-ExecReload=/usr/bin/podman kill -s HUP mariadb-app
 SyslogIdentifier=%u
 PIDFile=%t/mariadb-app.pid
 Type=forking

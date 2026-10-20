@@ -1,35 +1,128 @@
 {
-    "common": {
-        "required": "Obrigatório",
-        "work_in_progress": "Em progresso",
-        "processing": "Procesando..."
-    },
-    "status": {
-        "services": "Serviço | Serviços",
-        "app_instance": "Instância do aplicativo",
-        "title": "Estado"
-    },
-    "error": {
-        "403": "Operation not authorized",
-        "401": "Invalid authentication",
-        "generic_error": "Something went wrong",
-        "error": "Error",
-        "network_timeout": "Network timeout",
-        "404": "Resource not found",
-        "network_error": "Network error",
-        "validation_error": "Validation error"
-    },
-    "about": {
-        "title": "About"
-    },
-    "action": {
-        "list-backup-repositories": "List backup repositories",
-        "list-backups": "List backups"
-    },
-    "task": {
-        "cannot_create_task": "Cannot create task {action}"
-    },
-    "settings": {
-        "title": "Settings"
-    }
+  "common": {
+    "required": "Obrigatório",
+    "work_in_progress": "Trabalho em andamento",
+    "processing": "Processando...",
+    "loading": "Carregando..."
+  },
+  "status": {
+    "title": "Estado",
+    "app_instance": "Instância da aplicação",
+    "services": "Serviço | Serviços",
+    "app_images": "Imagem da aplicação | Imagens da aplicação",
+    "app_volumes": "Volume da aplicação | Volumes da aplicação",
+    "installation_node": "Nó de instalação",
+    "node": "Nó",
+    "name": "Nome",
+    "size": "Tamanho",
+    "created": "Criado",
+    "mount": "Ponto de montagem",
+    "no_services": "Nenhum serviço",
+    "no_images": "Nenhuma imagem",
+    "no_volumes": "Nenhum volume",
+    "not_configured": "Não configurado",
+    "open_webapp": "Abrir o Dolibarr",
+    "configure": "Configurar",
+    "application": "Aplicação",
+    "restart_application": "Reiniciar a aplicação",
+    "restart_module_warning": "Tem a certeza de que quer reiniciar {name}? O serviço ficará indisponível durante alguns instantes.",
+    "go_to_node_details": "Ver os detalhes do nó",
+    "failed_services": "Serviços com falha",
+    "all_services_running": "Todos os serviços estão em execução",
+    "search_images": "Procurar imagens",
+    "search_volumes": "Procurar volumes",
+    "dolibarr_webapp": "Aplicação web Dolibarr"
+  },
+  "settings": {
+    "title": "Configurações",
+    "configure_instance": "Configurar {instance}",
+    "save": "Salvar",
+    "lets_encrypt": "Solicitar um certificado Let's Encrypt",
+    "enabled": "Ativado",
+    "disabled": "Desativado",
+    "advanced": "Avançado",
+    "configuring": "Configurando",
+    "instance_configuration": "Configurar o Dolibarr",
+    "domain_already_used_in_traefik": "Domínio já usado no Traefik",
+    "host_pattern": "Deve ser um nome de domínio completo válido",
+    "host_format": "Deve ser um nome de domínio completo válido",
+    "web_access": "Acesso web",
+    "language": "Idioma predefinido",
+    "choose_language": "Escolher um idioma",
+    "language_helper": "Idioma das páginas do Dolibarr. Cada usuário pode alterá-lo nas suas preferências",
+    "admin_account": "Administrador local",
+    "admin_account_info_title": "A conta admin",
+    "admin_account_info_first": "A conta local admin é administradora do Dolibarr. Escolha agora a senha: ela substitui a senha aleatória criada na instalação.",
+    "admin_account_info_set": "A conta local admin é administradora do Dolibarr e sempre funciona, mesmo se o domínio de usuários estiver indisponível.",
+    "authentication": "Autenticação",
+    "no_user_domain_title": "Nenhum domínio de usuários",
+    "no_user_domain_description": "Somente as contas locais do Dolibarr podem fazer login. Crie ou entre em um domínio de usuários (OpenLDAP ou Active Directory) para que os usuários do domínio façam login no Dolibarr.",
+    "go_to_domains": "Ir para Domínios e usuários",
+    "ldap_authentication": "Os usuários do domínio podem entrar",
+    "ldap_authentication_tooltip": "Os usuários do domínio escolhido fazem login no Dolibarr com as credenciais do domínio. As contas locais do Dolibarr continuam funcionando.",
+    "ldap_info_title": "Como os usuários do domínio são adicionados",
+    "ldap_info_description": "O Dolibarr não cria contas no login: os usuários do domínio são adicionados sempre que a configuração é salva. Os membros do grupo de administradores são administradores do Dolibarr.",
+    "user_domain": "Domínio de usuários",
+    "choose_user_domain": "Escolher um domínio de usuários",
+    "admin_group": "Grupo de administradores (opcional)",
+    "choose_admin_group": "Escolher um grupo",
+    "admin_group_helper": "Os membros deste grupo são administradores do Dolibarr",
+    "ldap_sync": "Sincronização diária",
+    "ldap_sync_tooltip": "Todos os dias, o Dolibarr adiciona os novos usuários do domínio e atualiza nomes, e-mails e direitos de administrador. As contas removidas do domínio ficam no Dolibarr, mas não conseguem mais fazer login.",
+    "notifications": "Notificações por e-mail",
+    "smarthost_disabled_title": "Notificações por e-mail desativadas",
+    "smarthost_disabled_description": "O Dolibarr envia os e-mails pelo smarthost do cluster, que não está configurado. Configure-o para que o Dolibarr possa enviar e-mails.",
+    "go_to_smarthost": "Configurar o smarthost",
+    "smarthost_enabled_title": "Notificações por e-mail ativadas",
+    "smarthost_enabled_description": "O Dolibarr envia os e-mails pelo smarthost do cluster {host}.",
+    "mail_from": "Endereço do remetente (opcional)",
+    "mail_from_helper": "Endereço usado como remetente dos e-mails do Dolibarr",
+    "mail_from_format": "Deve ser um endereço de e-mail válido",
+    "language_enum": "Escolha um idioma da lista",
+    "admin_password_minLength": "A senha é muito curta",
+    "no_route_title": "Esta instância não tem endereço web",
+    "no_route_description": "Esta instância é um clone e mantém o nome do host da origem. Defina um novo nome de host e salve para tornar o Dolibarr acessível.",
+    "user_domain_not_found": "Este domínio de usuários não existe",
+    "change_admin_password": "Alterar a senha da conta admin",
+    "admin_password": "Senha da conta admin",
+    "admin_password_confirm": "Confirmar a senha",
+    "admin_password_too_weak": "Use pelo menos 8 caracteres com minúsculas, maiúsculas, um número e um símbolo",
+    "admin_password_mismatch": "As senhas não coincidem",
+    "admin_password_required": "Escolha uma senha para a conta admin",
+    "dolibarr_fqdn": "Nome do host do Dolibarr (FQDN)",
+    "language_auto": "Idioma do navegador",
+    "admin_password_pattern": "A senha não pode conter uma quebra de linha",
+    "admin_group_pattern": "O nome do grupo não pode conter uma quebra de linha"
+  },
+  "about": {
+    "title": "Sobre"
+  },
+  "task": {
+    "cannot_create_task": "Não é possível criar a tarefa {action}"
+  },
+  "action": {
+    "get-status": "Obter o estado",
+    "get-configuration": "Obter a configuração",
+    "configure-module": "Configurar o módulo",
+    "get-module-info": "Obter as informações do módulo",
+    "get-name": "Obter o nome",
+    "list-backup-repositories": "Listar os repositórios de backup",
+    "list-backups": "Listar os backups",
+    "list-installed-modules": "Listar os módulos instalados",
+    "list-domain-groups": "Listar os grupos do domínio",
+    "restart-module": "Reiniciar o módulo"
+  },
+  "error": {
+    "error": "Erro",
+    "generic_error": "Algo correu mal",
+    "validation_error": "Erro de validação",
+    "network_error": "Erro de rede",
+    "network_timeout": "Tempo limite da rede esgotado",
+    "401": "Autenticação inválida",
+    "403": "Operação não autorizada",
+    "404": "Recurso não encontrado",
+    "cannot_retrieve_module_info": "Não é possível obter as informações do módulo",
+    "cannot_retrieve_installed_modules": "Não é possível obter os módulos instalados",
+    "cannot_retrieve_configuration": "Não é possível obter a configuração"
+  }
 }
