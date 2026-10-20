@@ -78,6 +78,8 @@ def run_php(settings):
     fd = os.open(envfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as fp:
         for key, value in settings.items():
+            # A line break would inject another variable: the smarthost password is not validated here
+            agent.assert_exp("\n" not in value and "\r" not in value, f"{key} contains a line break")
             fp.write(f"{key}={value}\n")
     try:
         with open(os.path.join(os.environ["AGENT_INSTALL_DIR"], "dolibarr", "apply-config.php"), "rb") as script:

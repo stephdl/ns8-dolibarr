@@ -90,7 +90,9 @@
     "admin_password_mismatch": "Pasahitzak ez datoz bat",
     "admin_password_required": "Aukeratu admin kontuarentzako pasahitz bat",
     "dolibarr_fqdn": "Dolibarr ostalari-izena (FQDN)",
-    "language_auto": "Nabigatzailearen hizkuntza"
+    "language_auto": "Nabigatzailearen hizkuntza",
+    "admin_password_pattern": "Pasahitzak ezin du lerro-jauzirik izan",
+    "admin_group_pattern": "Taldearen izenak ezin du lerro-jauzirik izan"
   },
   "about": {
     "title": "Honi buruz"

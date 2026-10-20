@@ -90,7 +90,9 @@
     "admin_password_mismatch": "Die Passwörter stimmen nicht überein",
     "admin_password_required": "Wählen Sie ein Passwort für das Konto admin",
     "dolibarr_fqdn": "Hostname von Dolibarr (FQDN)",
-    "language_auto": "Sprache des Browsers"
+    "language_auto": "Sprache des Browsers",
+    "admin_password_pattern": "Das Passwort darf keinen Zeilenumbruch enthalten",
+    "admin_group_pattern": "Der Gruppenname darf keinen Zeilenumbruch enthalten"
   },
   "about": {
     "title": "Über"

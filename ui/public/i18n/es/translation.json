@@ -90,7 +90,9 @@
     "admin_password_mismatch": "Las contraseñas no coinciden",
     "admin_password_required": "Elija una contraseña para la cuenta admin",
     "dolibarr_fqdn": "Nombre de host de Dolibarr (FQDN)",
-    "language_auto": "Idioma del navegador"
+    "language_auto": "Idioma del navegador",
+    "admin_password_pattern": "La contraseña no puede contener un salto de línea",
+    "admin_group_pattern": "El nombre del grupo no puede contener un salto de línea"
   },
   "about": {
     "title": "Acerca de"

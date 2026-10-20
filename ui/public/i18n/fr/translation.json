@@ -90,7 +90,9 @@
     "admin_password_mismatch": "Les mots de passe ne correspondent pas",
     "admin_password_required": "Choisissez un mot de passe pour le compte admin",
     "dolibarr_fqdn": "Nom d'hôte de Dolibarr (FQDN)",
-    "language_auto": "Langue du navigateur"
+    "language_auto": "Langue du navigateur",
+    "admin_password_pattern": "Le mot de passe ne peut pas contenir de retour à la ligne",
+    "admin_group_pattern": "Le nom du groupe ne peut pas contenir de retour à la ligne"
   },
   "about": {
     "title": "À propos"

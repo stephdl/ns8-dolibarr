@@ -90,7 +90,9 @@
     "admin_password_mismatch": "Passwords do not match",
     "admin_password_required": "Choose a password for the admin account",
     "dolibarr_fqdn": "Dolibarr hostname (FQDN)",
-    "language_auto": "Browser language"
+    "language_auto": "Browser language",
+    "admin_password_pattern": "The password cannot contain a line break",
+    "admin_group_pattern": "The group name cannot contain a line break"
   },
   "about": {
     "title": "About"

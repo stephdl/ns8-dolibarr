@@ -90,7 +90,9 @@
     "admin_password_mismatch": "As senhas não coincidem",
     "admin_password_required": "Escolha uma senha para a conta admin",
     "dolibarr_fqdn": "Nome do host do Dolibarr (FQDN)",
-    "language_auto": "Idioma do navegador"
+    "language_auto": "Idioma do navegador",
+    "admin_password_pattern": "A senha não pode conter uma quebra de linha",
+    "admin_group_pattern": "O nome do grupo não pode conter uma quebra de linha"
   },
   "about": {
     "title": "Sobre"
