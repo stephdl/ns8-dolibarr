@@ -91,19 +91,22 @@ def run_php(settings):
 
 
 def sync_users():
+    """Return False if the LDAP script reported errors."""
     # Dolibarr does not create users at login: without a sync no domain user can log in.
     # LDAP_SYNC only enables the daily timer.
     if os.getenv("USER_DOMAIN", "") == "":
-        return
+        return True
     # The local admin keeps its own password even if the domain has an admin user
     proc = subprocess.run(["podman", "exec", "-u", "www-data", "-w", os.path.dirname(SYNC_SCRIPT), "dolibarr-app",
                            "php", SYNC_SCRIPT, "commitiferror", "--excludeuser=admin", "-y"], stdout=sys.stderr)
-    if proc.returncode != 0:
+    ldap_ok = proc.returncode == 0
+    if not ldap_ok:
         print(agent.SD_WARNING + f"LDAP users synchronization reported {proc.returncode} error(s)", file=sys.stderr)
     proc = run_php({"NS8_STEP": "admins", "NS8_ADMIN_GROUP": os.getenv("ADMIN_GROUP", "")})
     if proc.returncode != 0:
         print(agent.SD_ERR + "Dolibarr admin rights update failed", file=sys.stderr)
         sys.exit(proc.returncode)
+    return ldap_ok
 
 
 if not is_running():
@@ -118,8 +121,8 @@ fcntl.flock(lock, fcntl.LOCK_EX)
 wait_for_dolibarr()
 
 if "--sync" in sys.argv[1:]:
-    sync_users()
-    sys.exit(0)
+    # A manual or daily sync exists only to import users: report its errors
+    sys.exit(0 if sync_users() else 1)
 
 # Before the settings: they go through Dolibarr code that refuses an outdated database
 agent.run_helper("runagent", "dolibarr-upgrade-database").check_returncode()
