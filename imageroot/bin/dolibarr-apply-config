@@ -104,7 +104,7 @@ def sync_users():
 
 
 if not is_running():
-    print("dolibarr-app.service is not running, settings will be applied at next configuration", file=sys.stderr)
+    print("dolibarr-app.service is not running, settings are applied when it starts", file=sys.stderr)
     sys.exit(0)
 
 wait_for_dolibarr()
@@ -112,6 +112,9 @@ wait_for_dolibarr()
 if "--sync" in sys.argv[1:]:
     sync_users()
     sys.exit(0)
+
+# Before the settings: they go through Dolibarr code that refuses an outdated database
+agent.run_helper("runagent", "dolibarr-upgrade-database").check_returncode()
 
 refresh_ldap_env()
 

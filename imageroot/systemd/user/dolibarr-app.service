@@ -7,6 +7,7 @@
 Description=Podman dolibarr-app.service
 BindsTo=dolibarr.service
 After=dolibarr.service mariadb-app.service
+Wants=dolibarr-apply-config.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n

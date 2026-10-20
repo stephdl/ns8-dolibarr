@@ -5,50 +5,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-# The image entrypoint migrates the database only when install.lock is missing,
-# so the module runs the Dolibarr upgrade scripts itself, once per new version
-
-set -e
-
 exec 1>&2
 
+# A stopped app runs the upgrade at its next start, from dolibarr-apply-config
 if ! systemctl --user -q is-active dolibarr-app.service; then
-    echo "dolibarr-app.service is not running, the database upgrade runs at the next update"
+    echo "dolibarr-app.service is not running, the database upgrade runs when it starts"
     exit 0
 fi
 
-# The entrypoint writes conf.php before Apache starts: wait for any HTTP answer
-for i in $(seq 200); do
-    curl -s -o /dev/null --max-time 5 "http://127.0.0.1:${TCP_PORT}/" && break
-    sleep 3
-done
-
-podman exec -i -u www-data dolibarr-app sh -s <<'EOS'
-set -e
-cd /var/www/html/install
-
-db_version=$(php -r '
-    define("NOREQUIREUSER", 1);
-    define("NOREQUIRETRAN", 1);
-    require "/var/www/html/master.inc.php";
-    echo getDolGlobalString("MAIN_VERSION_LAST_UPGRADE", getDolGlobalString("MAIN_VERSION_LAST_INSTALL"));
-')
-if [ -z "${db_version}" ] || [ "${db_version}" = "${DOLI_VERSION}" ]; then
-    echo "Dolibarr database version ${db_version:-unknown}, files ${DOLI_VERSION}: no upgrade needed"
-    exit 0
-fi
-
-echo "Upgrading the Dolibarr database from ${db_version} to ${DOLI_VERSION}"
-# The upgrade scripts refuse to run while install.lock exists without this file
-touch /var/www/documents/upgrade.unlock
-trap 'rm -f /var/www/documents/upgrade.unlock' EXIT
-log=/var/www/documents/ns8-upgrade.log
-: > "${log}"
-for script in upgrade.php upgrade2.php step5.php; do
-    if ! php "${script}" "${db_version}" "${DOLI_VERSION}" >> "${log}" 2>&1; then
-        echo "Dolibarr ${script} failed, see documents/ns8-upgrade.log. The dump taken before the update is state/dolibarr-before-update.sql"
-        exit 1
-    fi
-done
-echo "Dolibarr database upgraded to ${DOLI_VERSION}"
-EOS
+exec runagent dolibarr-upgrade-database
