@@ -29,7 +29,9 @@ if user_domain:
         else:
             users = "(objectClass=posixAccount)"
             login = "uid"
-        users_filter = "(&" + users + ldapproxy.get_ldap_users_search_filter_clause(user_domain) + ")"
+        # The directory compares logins without case, like the Dolibarr database: a domain
+        # user named Admin must never be synchronized onto or log in as the local admin account
+        users_filter = "(&" + users + "(!(" + login + "=admin))" + ldapproxy.get_ldap_users_search_filter_clause(user_domain) + ")"
         settings = {
             "NS8_LDAP_DOMAIN": user_domain,
             "NS8_LDAP_HOST": "accountprovider",
@@ -39,9 +41,8 @@ if user_domain:
             "NS8_LDAP_BIND_DN": domain["bind_dn"],
             "NS8_LDAP_BIND_PASSWORD": domain["bind_password"],
             "NS8_LDAP_USERS_FILTER": users_filter,
-            # Dolibarr replaces %1% with the login typed in the form. A domain user named
-            # admin must never open the session of the local admin account.
-            "NS8_LDAP_LOGIN_FILTER": "(&" + users_filter + "(!(" + login + "=admin))(" + login + "=%1%))",
+            # Dolibarr replaces %1% with the login typed in the form
+            "NS8_LDAP_LOGIN_FILTER": "(&" + users_filter + "(" + login + "=%1%))",
         }
 
 envfile = "ldap.env"
