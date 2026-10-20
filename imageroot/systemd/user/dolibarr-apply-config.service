@@ -11,5 +11,7 @@ After=dolibarr-app.service
 
 [Service]
 Type=oneshot
+# The first start installs the database before the settings can be applied
+TimeoutStartSec=20min
 SyslogIdentifier=%N
 ExecStart=runagent dolibarr-apply-config

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+exec 1>&2
+
+# Runs the database upgrade, then the settings. 20restart already started it with
+# dolibarr-app: this waits for that run, or starts a new one
+if systemctl --user -q is-active dolibarr-app.service; then
+    systemctl --user start dolibarr-apply-config.service
+else
+    echo "dolibarr-app.service is not running, the database upgrade runs when it starts"
+fi

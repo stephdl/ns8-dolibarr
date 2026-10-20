@@ -7,23 +7,11 @@
 
 # The image entrypoint migrates the database only when install.lock is missing,
 # so the module runs the Dolibarr upgrade scripts itself, once per new version.
-# Called after an update and at each app start, so a stopped app catches up.
+# Called by dolibarr-apply-config once Apache answers, so a stopped app catches up at start.
 
 set -e
 
 exec 1>&2
-
-# The entrypoint writes conf.php before Apache starts: wait for any HTTP answer
-for i in $(seq 200); do
-    if curl -s -o /dev/null --max-time 5 "http://127.0.0.1:${TCP_PORT}/"; then
-        break
-    fi
-    if [[ ${i} -eq 200 ]]; then
-        echo "Dolibarr did not start in time, database upgrade not run"
-        exit 1
-    fi
-    sleep 3
-done
 
 podman exec -i -u www-data dolibarr-app sh -s <<'EOS'
 set -e

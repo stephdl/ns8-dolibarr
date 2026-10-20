@@ -14,6 +14,7 @@
 import os
 import sys
 import time
+import fcntl
 import subprocess
 import urllib.request
 import agent
@@ -108,6 +109,11 @@ def sync_users():
 if not is_running():
     print("dolibarr-app.service is not running, settings are applied when it starts", file=sys.stderr)
     sys.exit(0)
+
+# The app start, configure-module, events and the daily sync can call this at the same time:
+# two runs would migrate the database twice and race on secrets/admin_password
+lock = open("apply-config.lock", "w")
+fcntl.flock(lock, fcntl.LOCK_EX)
 
 wait_for_dolibarr()
 

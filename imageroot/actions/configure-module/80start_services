@@ -27,4 +27,5 @@ else
     systemctl --user disable --now dolibarr-ldap-sync.timer
 fi
 
-runagent dolibarr-apply-config
+# Waits for the run started with dolibarr-app, if any, and fails the action if it fails
+systemctl --user start dolibarr-apply-config.service
