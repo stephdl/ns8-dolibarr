@@ -1,19 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
 #
 # Copyright (C) 2026 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-set -e
+import os
+import sys
+import json
+import subprocess
+import agent
 
-# Redirect any output to the journal (stderr)
-exec 1>&2
+if os.getenv("USER_DOMAIN", "") == "":
+    agent.set_status("validation-failed")
+    json.dump([{"field": "user_domain", "parameter": "user_domain", "value": "", "error": "user_domain_required"}],
+              fp=sys.stdout)
+    sys.exit(3)
 
-if [[ -z "${USER_DOMAIN}" ]]; then
-    echo "No user domain configured, nothing to synchronize"
-    exit 2
-fi
-
-# Same unit as the daily timer: it shares the apply-config lock and logs
-systemctl --user start dolibarr-ldap-sync.service
+# Called directly, not through the timer unit: the unit cannot hand its result back
+proc = subprocess.run(["runagent", "dolibarr-apply-config", "--sync", "--report"], stdout=subprocess.PIPE, text=True)
+if proc.returncode != 0:
+    sys.exit(proc.returncode)
+json.dump(json.loads(proc.stdout), fp=sys.stdout)

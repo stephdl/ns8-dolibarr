@@ -253,15 +253,30 @@
                     size="field"
                     :icon="Renew20"
                     :loading="loading.syncUsers"
-                    :disabled="stillLoading || loading.syncUsers"
+                    :disabled="
+                      stillLoading || loading.syncUsers || isLdapFormChanged
+                    "
                     @click.prevent="syncUsers"
                     class="mg-bottom"
                     >{{ $t("settings.sync_users_now") }}</NsButton
                   >
                   <NsInlineNotification
-                    v-if="isSyncUsersDone"
+                    v-if="isLdapFormChanged"
+                    kind="info"
+                    :title="$t('settings.sync_users_save_first')"
+                    :showCloseButton="false"
+                  />
+                  <NsInlineNotification
+                    v-else-if="syncUsersResult === 'done'"
                     kind="success"
                     :title="$t('settings.sync_users_done')"
+                    :showCloseButton="false"
+                  />
+                  <NsInlineNotification
+                    v-else-if="syncUsersResult === 'partial'"
+                    kind="warning"
+                    :title="$t('settings.sync_users_partial')"
+                    :description="$t('settings.sync_users_partial_description')"
                     :showCloseButton="false"
                   />
                   <NsInlineNotification
@@ -420,9 +435,11 @@ export default {
       domainGroups: [],
       adminGroupComboKey: 0,
       isLdapSyncEnabled: true,
-      // the sync uses the saved domain, not the one being edited
+      // the sync uses the saved domain and group, not the ones being edited
       configuredUserDomain: "",
-      isSyncUsersDone: false,
+      configuredAdminGroup: "",
+      // "", "done" or "partial"
+      syncUsersResult: "",
       Renew20,
       smarthost: { enabled: false, host: "" },
       mailFrom: "",
@@ -501,6 +518,12 @@ export default {
         label: group,
         value: group,
       }));
+    },
+    isLdapFormChanged() {
+      return (
+        this.userDomain !== this.configuredUserDomain ||
+        this.adminGroup !== this.configuredAdminGroup
+      );
     },
     mailFromPlaceholder() {
       return "noreply@" + (this.host || "dolibarr.example.org");
@@ -646,6 +669,8 @@ export default {
       this.adminGroup = config.admin_group;
       this.userDomain = hasDomain ? config.user_domain : "";
       this.configuredUserDomain = this.userDomain;
+      this.configuredAdminGroup = this.adminGroup;
+      this.syncUsersResult = "";
       this.isLdapSyncEnabled = hasDomain ? config.ldap_sync : true;
       this.smarthost = config.smarthost;
       this.mailFrom = config.mail_from;
@@ -840,12 +865,16 @@ export default {
     },
     async syncUsers() {
       this.error.syncUsers = "";
-      this.isSyncUsersDone = false;
+      this.syncUsersResult = "";
       this.loading.syncUsers = true;
       const taskAction = "sync-users";
       const eventId = this.getUuid();
       this.core.$root.$once(
         `${taskAction}-aborted-${eventId}`,
+        this.syncUsersAborted
+      );
+      this.core.$root.$once(
+        `${taskAction}-validation-failed-${eventId}`,
         this.syncUsersAborted
       );
       this.core.$root.$once(
@@ -875,8 +904,8 @@ export default {
       this.error.syncUsers = this.$t("error.generic_error");
       this.loading.syncUsers = false;
     },
-    syncUsersCompleted() {
-      this.isSyncUsersDone = true;
+    syncUsersCompleted(taskContext, taskResult) {
+      this.syncUsersResult = taskResult.output.ldap_errors ? "partial" : "done";
       this.loading.syncUsers = false;
     },
   },
