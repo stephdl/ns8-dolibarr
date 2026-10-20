@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Keep a dump of the database as it was before the new image runs on it
+
+set -e
+
+exec 1>&2
+
+if ! systemctl --user -q is-active mariadb-app.service; then
+    exit 0
+fi
+
+umask 077
+podman exec mariadb-app sh -c 'exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" \
+        --databases dolibarr \
+        --default-character-set=utf8mb4 \
+        --single-transaction \
+        --quick \
+        --routines \
+        --add-drop-table' > dolibarr-before-update.sql.tmp
+mv dolibarr-before-update.sql.tmp dolibarr-before-update.sql
+echo "Database dumped to dolibarr-before-update.sql"

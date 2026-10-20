@@ -1,40 +1,42 @@
 #
-# Copyright (C) 2022 Nethesis S.r.l.
+# Copyright (C) 2026 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
 [Unit]
-Description=Podman  dolibarr-app.service
+Description=Podman dolibarr-app.service
 BindsTo=dolibarr.service
 After=dolibarr.service mariadb-app.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 EnvironmentFile=%S/state/environment
-EnvironmentFile=-%S/state/smarthost.env
 WorkingDirectory=%S/state
 Restart=always
 TimeoutStopSec=70
-ExecStartPre=/bin/mkdir -p tmp
 ExecStartPre=/bin/rm -f %t/dolibarr-app.pid %t/dolibarr-app.ctr-id
-ExecStartPre=-runagent discover-smarthost
+# Keep the previous ldap.env if the cluster cannot be reached at boot
+ExecStartPre=-runagent discover-ldap
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/dolibarr-app.pid \
     --cidfile %t/dolibarr-app.ctr-id --cgroups=no-conmon \
-    --pod-id-file %t/dolibarr.pod-id --replace -d --name  dolibarr-app \
-    --volume dolibarr-app:/var/www/html/:Z \
-    --volume ./tmp:/tmp:Z \
-    --env=MARIADB_* \
-    --env MARIADB_DB_TYPE=mysql \
-    --env MARIADB_DB_HOST=127.0.0.1 \
-    --env MARIADB_DB_PORT=3306 \
-    --env MARIADB_DB_USER=dolibarr \
-    --env MARIADB_DB_PASSWORD=dolibarr \
-    --env MARIADB_DB_NAME=dolibarr \
-    ${NGINX_IMAGE}
+    --pod-id-file %t/dolibarr.pod-id --replace -d --name dolibarr-app \
+    --volume dolibarr-documents:/var/www/documents:Z \
+    --volume dolibarr-custom:/var/www/html/custom:Z \
+    --volume %S/dolibarr/ns8-conf.php:/var/www/scripts/before-starting.d/10-ns8-conf.php:ro,z \
+    --env NS8_POD_HOSTNAME=${TRAEFIK_HOST} \
+    --env-file=%S/state/secrets/dolibarr.env \
+    --env-file=%S/state/ldap.env \
+    --env DOLI_DB_HOST=127.0.0.1 \
+    --env DOLI_DB_HOST_PORT=3306 \
+    --env DOLI_DB_NAME=dolibarr \
+    --env DOLI_DB_USER=dolibarr \
+    --env DOLI_ADMIN_LOGIN=admin \
+    --env DOLI_URL_ROOT=https://${TRAEFIK_HOST} \
+    --env DOLI_INSTALL_AUTO=1 \
+    ${DOLIBARR_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/dolibarr-app.ctr-id -t 10
-ExecReload=/usr/bin/podman kill -s HUP dolibarr-app
-SyslogIdentifier=%u
 ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/dolibarr-app.ctr-id
+SyslogIdentifier=%u
 PIDFile=%t/dolibarr-app.pid
 Type=forking
 

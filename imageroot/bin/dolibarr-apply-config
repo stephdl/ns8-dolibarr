@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+#
+# Push the module settings (smarthost, user domain, admin account) into Dolibarr.
+# With --sync, only synchronize the users of the user domain and their admin flag.
+# Safe to run many times. Does nothing if Dolibarr is not running.
+#
+
+import os
+import sys
+import time
+import subprocess
+import urllib.request
+import agent
+
+ADMIN_PASSWORD_FILE = "secrets/admin_password"
+# The first start installs the Dolibarr database, it can take a few minutes
+STARTUP_TIMEOUT = 600
+SYNC_SCRIPT = "/var/www/scripts/user/sync_users_ldap2dolibarr.php"
+
+
+def is_running():
+    return subprocess.run(["systemctl", "--user", "-q", "is-active", "dolibarr-app.service"]).returncode == 0
+
+
+def wait_for_dolibarr():
+    # Apache starts only after the Dolibarr database install is complete
+    deadline = time.time() + STARTUP_TIMEOUT
+    url = f"http://127.0.0.1:{os.environ['TCP_PORT']}/"
+
+    # Any HTTP answer means Apache is up: never follow redirects to the public host name
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *args, **kwargs):
+            return None
+
+    opener = urllib.request.build_opener(NoRedirect)
+    while True:
+        try:
+            opener.open(url, timeout=5)
+            return
+        except urllib.error.HTTPError:
+            return
+        except Exception:
+            if time.time() > deadline:
+                print(agent.SD_ERR + "Dolibarr did not start in time", file=sys.stderr)
+                sys.exit(1)
+            time.sleep(3)
+
+
+def read_envfile(path):
+    with open(path) as fp:
+        return sorted(line.rstrip("\n") for line in fp if line.strip())
+
+
+def running_ldap_env():
+    out = subprocess.run(["podman", "inspect", "dolibarr-app", "--format", "{{range .Config.Env}}{{println .}}{{end}}"],
+                         stdout=subprocess.PIPE, text=True).stdout
+    return sorted(line for line in out.splitlines() if line.startswith("NS8_LDAP_"))
+
+
+def refresh_ldap_env():
+    """Rewrite ldap.env and restart Dolibarr when the user domain settings changed."""
+    agent.run_helper("runagent", "discover-ldap").check_returncode()
+    if read_envfile("ldap.env") != running_ldap_env():
+        print("User domain settings changed, restarting dolibarr-app.service", file=sys.stderr)
+        agent.run_helper("systemctl", "--user", "restart", "dolibarr-app.service").check_returncode()
+        wait_for_dolibarr()
+
+
+def run_php(settings):
+    # Secrets go through a private env file, never on the command line
+    envfile = f"secrets/apply-config.env.{os.getpid()}"
+    fd = os.open(envfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as fp:
+        for key, value in settings.items():
+            fp.write(f"{key}={value}\n")
+    try:
+        with open(os.path.join(os.environ["AGENT_INSTALL_DIR"], "dolibarr", "apply-config.php"), "rb") as script:
+            return subprocess.run(["podman", "exec", "-i", "-u", "www-data", f"--env-file={envfile}", "dolibarr-app", "php"],
+                                  stdin=script, stdout=subprocess.PIPE, text=True)
+    finally:
+        os.unlink(envfile)
+
+
+def sync_users():
+    # Dolibarr does not create users at login: without a sync no domain user can log in.
+    # LDAP_SYNC only enables the daily timer.
+    if os.getenv("USER_DOMAIN", "") == "":
+        return
+    # The local admin keeps its own password even if the domain has an admin user
+    proc = subprocess.run(["podman", "exec", "-u", "www-data", "-w", os.path.dirname(SYNC_SCRIPT), "dolibarr-app",
+                           "php", SYNC_SCRIPT, "commitiferror", "--excludeuser=admin", "-y"], stdout=sys.stderr)
+    if proc.returncode != 0:
+        print(agent.SD_WARNING + f"LDAP users synchronization reported {proc.returncode} error(s)", file=sys.stderr)
+    proc = run_php({"NS8_STEP": "admins", "NS8_ADMIN_GROUP": os.getenv("ADMIN_GROUP", "")})
+    if proc.returncode != 0:
+        print(agent.SD_ERR + "Dolibarr admin rights update failed", file=sys.stderr)
+        sys.exit(proc.returncode)
+
+
+if not is_running():
+    print("dolibarr-app.service is not running, settings will be applied at next configuration", file=sys.stderr)
+    sys.exit(0)
+
+wait_for_dolibarr()
+
+if "--sync" in sys.argv[1:]:
+    sync_users()
+    sys.exit(0)
+
+refresh_ldap_env()
+
+settings = {
+    "NS8_HOST": os.environ["TRAEFIK_HOST"],
+    "NS8_LANGUAGE": os.getenv("DOLIBARR_LANGUAGE", "auto"),
+    "NS8_MAIL_FROM": os.getenv("MAIL_FROM", ""),
+}
+
+rdb = agent.redis_connect(use_replica=True)
+smtp = agent.get_smarthost_settings(rdb)
+if smtp["enabled"] and smtp["host"]:
+    # From inside the pod, 10.0.2.2 is the node loopback
+    smtp_host = "10.0.2.2" if smtp["host"] in ("127.0.0.1", "localhost") else smtp["host"]
+    settings.update({
+        "NS8_SMTP_ENABLED": "1",
+        "NS8_SMTP_HOST": smtp_host,
+        "NS8_SMTP_PORT": str(smtp["port"]),
+        "NS8_SMTP_USERNAME": smtp["username"],
+        "NS8_SMTP_PASSWORD": smtp["password"],
+        "NS8_SMTP_ENCRYPTION": smtp["encrypt_smtp"],
+        "NS8_SMTP_TLSVERIFY": "1" if smtp["tls_verify"] else "0",
+    })
+
+if os.path.exists(ADMIN_PASSWORD_FILE):
+    with open(ADMIN_PASSWORD_FILE) as fp:
+        settings["NS8_ADMIN_PASSWORD"] = fp.read().rstrip("\n")
+
+proc = run_php(settings)
+
+if "NS8_ADMIN_PASSWORD_APPLIED" in proc.stdout and os.path.exists(ADMIN_PASSWORD_FILE):
+    os.unlink(ADMIN_PASSWORD_FILE)
+    agent.set_env("ADMIN_PASSWORD_SET", True)
+
+if proc.returncode != 0:
+    print(agent.SD_ERR + "Dolibarr configuration failed", file=sys.stderr)
+    sys.exit(proc.returncode)
+
+sync_users()

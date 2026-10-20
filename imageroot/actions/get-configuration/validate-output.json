@@ -1,36 +1,107 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Get dolibarr settings",
-    "$id": "http://nethserver.org/json-schema/task/input/dolibarr/get-configuration",
+    "$id": "http://nethserver.org/json-schema/task/output/dolibarr/get-configuration",
     "description": "Get dolibarr settings",
     "examples": [
         {
             "host": "dolibarr.domain.org",
-            "http2https": true,
-            "lets_encrypt": true
+            "lets_encrypt": true,
+            "route_configured": true,
+            "user_domain": "ad.domain.org",
+            "admin_group": "Domain Admins",
+            "ldap_sync": true,
+            "mail_from": "",
+            "language": "en_US",
+            "admin_password_set": true,
+            "user_domains_list": [
+                "ad.domain.org",
+                "openldap.domain.org"
+            ],
+            "smarthost": {
+                "enabled": true,
+                "host": "smtp.domain.org"
+            }
         }
     ],
     "type": "object",
     "required": [
         "host",
-        "http2https",
-        "lets_encrypt"
+        "lets_encrypt",
+        "route_configured",
+        "user_domain",
+        "admin_group",
+        "ldap_sync",
+        "mail_from",
+        "language",
+        "admin_password_set",
+        "user_domains_list",
+        "smarthost"
     ],
     "properties": {
         "host": {
-            "type": "string",
-            "description": "Host name for the application, like 'dolibarr.domain.org'",
-            "format": "idn-hostname"
+            "type": "string"
         },
         "lets_encrypt": {
-            "type": "boolean",
-            "title": "Let's Encrypt certificate",
-            "description": "Request a valid Let's Encrypt certificate."
+            "type": "boolean"
         },
-        "http2https": {
+        "route_configured": {
             "type": "boolean",
-            "title": "HTTP to HTTPS redirection",
-            "description": "Redirect all the HTTP requests to HTTPS"
+            "description": "False when the instance has no Traefik route, for example after a clone"
+        },
+        "user_domain": {
+            "type": "string"
+        },
+        "admin_group": {
+            "type": "string"
+        },
+        "ldap_sync": {
+            "type": "boolean"
+        },
+        "mail_from": {
+            "type": "string"
+        },
+        "language": {
+            "type": "string",
+            "description": "Default Dolibarr language. auto follows the browser.",
+            "enum": [
+                "auto",
+                "en_US",
+                "en_GB",
+                "fr_FR",
+                "it_IT",
+                "de_DE",
+                "es_ES",
+                "pt_PT",
+                "pt_BR",
+                "eu_ES",
+                "nl_NL"
+            ]
+        },
+        "admin_password_set": {
+            "type": "boolean",
+            "description": "True when the dolibarr account password has been set from NS8"
+        },
+        "user_domains_list": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "smarthost": {
+            "type": "object",
+            "required": [
+                "enabled",
+                "host"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                }
+            }
         }
     }
 }

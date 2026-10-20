@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+#
+# Write ldap.env with the user domain settings read by the conf.php hook at
+# container start. Empty when no domain is bound or the domain is gone.
+#
+
+import os
+import sys
+import agent
+from agent.ldapproxy import Ldapproxy
+
+user_domain = os.getenv("USER_DOMAIN", "")
+settings = {}
+if user_domain:
+    ldapproxy = Ldapproxy()
+    domain = ldapproxy.get_domain(user_domain)
+    if domain is None:
+        print(agent.SD_WARNING + f"User domain {user_domain} not found, LDAP login disabled", file=sys.stderr)
+    else:
+        if domain["schema"] == "ad":
+            users = "(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2))"
+            login = "samaccountname"
+        else:
+            users = "(objectClass=posixAccount)"
+            login = "uid"
+        users_filter = "(&" + users + ldapproxy.get_ldap_users_search_filter_clause(user_domain) + ")"
+        settings = {
+            "NS8_LDAP_DOMAIN": user_domain,
+            "NS8_LDAP_HOST": "accountprovider",
+            "NS8_LDAP_PORT": str(domain["port"]),
+            "NS8_LDAP_SCHEMA": domain["schema"],
+            "NS8_LDAP_BASE_DN": domain["base_dn"],
+            "NS8_LDAP_BIND_DN": domain["bind_dn"],
+            "NS8_LDAP_BIND_PASSWORD": domain["bind_password"],
+            "NS8_LDAP_USERS_FILTER": users_filter,
+            # Dolibarr replaces %1% with the login typed in the form. A domain user named
+            # admin must never open the session of the local admin account.
+            "NS8_LDAP_LOGIN_FILTER": "(&" + users_filter + "(!(" + login + "=admin))(" + login + "=%1%))",
+        }
+
+envfile = "ldap.env"
+tmpfile = f"{envfile}.{os.getpid()}.tmp"
+fd = os.open(tmpfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+with os.fdopen(fd, "w") as fp:
+    for key, value in settings.items():
+        fp.write(f"{key}={value}\n")
+os.replace(tmpfile, envfile)
