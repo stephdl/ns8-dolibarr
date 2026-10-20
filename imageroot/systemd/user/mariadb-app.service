@@ -25,7 +25,8 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/mariadb-app.pid \
     --env MARIADB_AUTO_UPGRADE=1 \
     ${MARIADB_IMAGE} \
     --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-ExecStartPost=/usr/bin/podman exec mariadb-app /bin/sh -c 'until mariadb-admin ping -h127.0.0.1 --protocol=tcp -uroot -p"$$MARIADB_ROOT_PASSWORD" --silent; do sleep 1; done'
+# ping succeeds as soon as the server answers, whatever the credentials: no password needed
+ExecStartPost=/usr/bin/podman exec mariadb-app /bin/sh -c 'until mariadb-admin ping -h127.0.0.1 --protocol=tcp --skip-ssl --silent; do sleep 1; done'
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/mariadb-app.ctr-id -t 10
 ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/mariadb-app.ctr-id
 SyslogIdentifier=%u

@@ -11,7 +11,7 @@ if ! systemctl --user -q is-active mariadb-app.service; then
     exit 0
 fi
 
-podman exec mariadb-app sh -c 'exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" \
+podman exec mariadb-app sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" exec mariadb-dump -uroot \
         --databases dolibarr \
         --default-character-set=utf8mb4 \
         --skip-dump-date \
