@@ -15,7 +15,7 @@ if os.getenv("USER_DOMAIN", "") == "":
     agent.set_status("validation-failed")
     json.dump([{"field": "user_domain", "parameter": "user_domain", "value": "", "error": "user_domain_required"}],
               fp=sys.stdout)
-    sys.exit(3)
+    sys.exit(2)
 
 # Called directly, not through the timer unit: the unit cannot hand its result back
 proc = subprocess.run(["runagent", "dolibarr-apply-config", "--sync", "--report"], stdout=subprocess.PIPE, text=True)
