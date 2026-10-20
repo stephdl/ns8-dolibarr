@@ -161,9 +161,10 @@ function apply_ldap(): void
         'LDAP_FIELD_MAIL'             => 'mail',
         'LDAP_FIELD_PHONE'            => 'telephonenumber',
         'LDAP_FIELD_MOBILE'           => 'mobile',
-        // NS8 OpenLDAP splits the display name badly into cn and sn, displayName is clean
-        'LDAP_FIELD_NAME'             => $is_ad ? 'sn' : 'displayname',
-        'LDAP_FIELD_FIRSTNAME'        => $is_ad ? 'givenname' : '',
+        // NS8 OpenLDAP splits the display name badly into cn and sn, and NS8 Samba
+        // leaves sn and givenName empty: displayName is the only reliable name
+        'LDAP_FIELD_NAME'             => 'displayname',
+        'LDAP_FIELD_FIRSTNAME'        => '',
         // Never copy a password from the directory
         'LDAP_FIELD_PASSWORD'         => '',
         'LDAP_FIELD_PASSWORD_CRYPTED' => '',
