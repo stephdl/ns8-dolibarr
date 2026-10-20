@@ -20,7 +20,7 @@ EOS
 
 trap 'rm -rfv initdb.d/' EXIT
 
-# Credentials come from the restored secrets, they match config_db.php in the dolibarr-data volume
+# Credentials come from the restored secrets: conf.php is rebuilt from them at each app start
 podman run \
   --rm \
   --interactive \
