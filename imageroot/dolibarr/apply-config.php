@@ -144,7 +144,7 @@ function apply_ldap(): void
     }
 
     $is_ad = env('NS8_LDAP_SCHEMA') === 'ad';
-    $login_field = $is_ad ? 'samaccountname' : 'uid';
+    $login_field = env('NS8_LDAP_LOGIN_ATTRIBUTE');
     $values = [
         'LDAP_SERVER_HOST'            => env('NS8_LDAP_HOST'),
         'LDAP_SERVER_PORT'            => env('NS8_LDAP_PORT'),
@@ -190,7 +190,7 @@ function ldap_bind_ns8()
 /** Return the logins of the entries matching $filter, lower case. */
 function ldap_logins($connection, string $filter): array
 {
-    $field = env('NS8_LDAP_SCHEMA') === 'ad' ? 'samaccountname' : 'uid';
+    $field = env('NS8_LDAP_LOGIN_ATTRIBUTE');
     $result = @ldap_search($connection, env('NS8_LDAP_BASE_DN'), $filter, [$field]);
     if ($result === false) {
         fail('LDAP search failed: ' . ldap_error($connection));

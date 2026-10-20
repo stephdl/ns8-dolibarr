@@ -18,7 +18,6 @@ $settings = [
 
 if (getenv('NS8_LDAP_HOST')) {
     $is_ad = getenv('NS8_LDAP_SCHEMA') === 'ad';
-    $login = $is_ad ? 'samaccountname' : 'uid';
     $settings = array_merge($settings, [
         // The local admin still logs in when the directory is down
         'dolibarr_main_authentication'           => 'ldap,dolibarr',
@@ -26,7 +25,7 @@ if (getenv('NS8_LDAP_HOST')) {
         'dolibarr_main_auth_ldap_port'           => getenv('NS8_LDAP_PORT'),
         'dolibarr_main_auth_ldap_version'        => '3',
         'dolibarr_main_auth_ldap_servertype'     => $is_ad ? 'activedirectory' : 'openldap',
-        'dolibarr_main_auth_ldap_login_attribute' => $login,
+        'dolibarr_main_auth_ldap_login_attribute' => getenv('NS8_LDAP_LOGIN_ATTRIBUTE'),
         'dolibarr_main_auth_ldap_dn'             => getenv('NS8_LDAP_BASE_DN'),
         'dolibarr_main_auth_ldap_filter'         => getenv('NS8_LDAP_LOGIN_FILTER'),
         'dolibarr_main_auth_ldap_admin_login'    => getenv('NS8_LDAP_BIND_DN'),

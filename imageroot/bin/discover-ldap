@@ -37,6 +37,7 @@ if user_domain:
             "NS8_LDAP_HOST": "accountprovider",
             "NS8_LDAP_PORT": str(domain["port"]),
             "NS8_LDAP_SCHEMA": domain["schema"],
+            "NS8_LDAP_LOGIN_ATTRIBUTE": login,
             "NS8_LDAP_BASE_DN": domain["base_dn"],
             "NS8_LDAP_BIND_DN": domain["bind_dn"],
             "NS8_LDAP_BIND_PASSWORD": domain["bind_password"],
