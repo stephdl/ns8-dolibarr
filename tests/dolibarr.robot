@@ -105,6 +105,11 @@ Check a reconfigure without password is accepted
     ${config} =    Run task    module/${module_id}/get-configuration    {}
     Should Be True    ${config['admin_password_set']}
 
+Check a user sync without user domain is rejected
+    ${output} =    Run task    module/${module_id}/sync-users    {}
+    ...    decode_json=${FALSE}    rc_expected=2
+    Should Contain    ${output}    user_domain_required
+
 Take screenshots
     [Tags]    ui
     Import Library    Browser

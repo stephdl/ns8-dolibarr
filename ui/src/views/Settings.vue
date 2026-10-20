@@ -247,6 +247,46 @@
                     $t("settings.enabled")
                   }}</template>
                 </NsToggle>
+                <template v-if="configuredUserDomain">
+                  <NsButton
+                    kind="tertiary"
+                    size="field"
+                    :icon="Renew20"
+                    :loading="loading.syncUsers"
+                    :disabled="
+                      stillLoading || loading.syncUsers || isLdapFormChanged
+                    "
+                    @click.prevent="syncUsers"
+                    class="mg-bottom"
+                    >{{ $t("settings.sync_users_now") }}</NsButton
+                  >
+                  <NsInlineNotification
+                    v-if="isLdapFormChanged"
+                    kind="info"
+                    :title="$t('settings.sync_users_save_first')"
+                    :showCloseButton="false"
+                  />
+                  <NsInlineNotification
+                    v-else-if="syncUsersResult === 'done'"
+                    kind="success"
+                    :title="$t('settings.sync_users_done')"
+                    :showCloseButton="false"
+                  />
+                  <NsInlineNotification
+                    v-else-if="syncUsersResult === 'partial'"
+                    kind="warning"
+                    :title="$t('settings.sync_users_partial')"
+                    :description="$t('settings.sync_users_partial_description')"
+                    :showCloseButton="false"
+                  />
+                  <NsInlineNotification
+                    v-if="error.syncUsers"
+                    kind="error"
+                    :title="$t('action.sync-users')"
+                    :description="error.syncUsers"
+                    :showCloseButton="false"
+                  />
+                </template>
               </template>
             </template>
 
@@ -340,6 +380,7 @@ import {
   IconService,
   PageTitleService,
 } from "@nethserver/ns8-ui-lib";
+import Renew20 from "@carbon/icons-vue/es/renew/20";
 
 const LANGUAGES = {
   auto: "",
@@ -394,6 +435,12 @@ export default {
       domainGroups: [],
       adminGroupComboKey: 0,
       isLdapSyncEnabled: true,
+      // the sync uses the saved domain and group, not the ones being edited
+      configuredUserDomain: "",
+      configuredAdminGroup: "",
+      // "", "done" or "partial"
+      syncUsersResult: "",
+      Renew20,
       smarthost: { enabled: false, host: "" },
       mailFrom: "",
       loading: {
@@ -401,12 +448,14 @@ export default {
         configureModule: false,
         getStatus: false,
         listDomainGroups: false,
+        syncUsers: false,
       },
       error: {
         getConfiguration: "",
         configureModule: "",
         getStatus: "",
         listDomainGroups: "",
+        syncUsers: "",
         host: "",
         lets_encrypt: "",
         language: "",
@@ -469,6 +518,12 @@ export default {
         label: group,
         value: group,
       }));
+    },
+    isLdapFormChanged() {
+      return (
+        this.userDomain !== this.configuredUserDomain ||
+        this.adminGroup !== this.configuredAdminGroup
+      );
     },
     mailFromPlaceholder() {
       return "noreply@" + (this.host || "dolibarr.example.org");
@@ -613,6 +668,9 @@ export default {
       // the admin group must be set before the domain watcher fires
       this.adminGroup = config.admin_group;
       this.userDomain = hasDomain ? config.user_domain : "";
+      this.configuredUserDomain = this.userDomain;
+      this.configuredAdminGroup = this.adminGroup;
+      this.syncUsersResult = "";
       this.isLdapSyncEnabled = hasDomain ? config.ldap_sync : true;
       this.smarthost = config.smarthost;
       this.mailFrom = config.mail_from;
@@ -804,6 +862,51 @@ export default {
     configureModuleCompleted() {
       this.loading.configureModule = false;
       this.getConfiguration();
+    },
+    async syncUsers() {
+      this.error.syncUsers = "";
+      this.syncUsersResult = "";
+      this.loading.syncUsers = true;
+      const taskAction = "sync-users";
+      const eventId = this.getUuid();
+      this.core.$root.$once(
+        `${taskAction}-aborted-${eventId}`,
+        this.syncUsersAborted
+      );
+      this.core.$root.$once(
+        `${taskAction}-validation-failed-${eventId}`,
+        this.syncUsersAborted
+      );
+      this.core.$root.$once(
+        `${taskAction}-completed-${eventId}`,
+        this.syncUsersCompleted
+      );
+      const res = await to(
+        this.createModuleTaskForApp(this.instanceName, {
+          action: taskAction,
+          extra: {
+            title: this.$t("action." + taskAction),
+            isNotificationHidden: true,
+            eventId,
+          },
+        })
+      );
+      const err = res[0];
+      if (err) {
+        console.error(`error creating task ${taskAction}`, err);
+        this.error.syncUsers = this.getErrorMessage(err);
+        this.loading.syncUsers = false;
+        return;
+      }
+    },
+    syncUsersAborted(taskResult, taskContext) {
+      console.error(`${taskContext.action} aborted`, taskResult);
+      this.error.syncUsers = this.$t("error.generic_error");
+      this.loading.syncUsers = false;
+    },
+    syncUsersCompleted(taskContext, taskResult) {
+      this.syncUsersResult = taskResult.output.ldap_errors ? "partial" : "done";
+      this.loading.syncUsers = false;
     },
   },
 };

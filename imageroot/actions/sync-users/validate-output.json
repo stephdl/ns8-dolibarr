@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "sync-users output",
+    "$id": "http://nethserver.org/json-schema/task/output/dolibarr/sync-users",
+    "description": "Result of the domain users synchronization",
+    "examples": [
+        {
+            "ldap_errors": false
+        }
+    ],
+    "type": "object",
+    "required": [
+        "ldap_errors"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "ldap_errors": {
+            "type": "boolean",
+            "description": "True if some domain users could not be synchronized, details are in the logs"
+        }
+    }
+}
