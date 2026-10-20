@@ -24,6 +24,7 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/dolibarr-app.pid \
     --volume dolibarr-documents:/var/www/documents:Z \
     --volume dolibarr-custom:/var/www/html/custom:Z \
     --volume %S/dolibarr/ns8-conf.php:/var/www/scripts/before-starting.d/10-ns8-conf.php:ro,z \
+    --volume %S/dolibarr/ns8-apache.conf:/etc/apache2/conf-enabled/zz-ns8.conf:ro,z \
     --env NS8_POD_HOSTNAME=${TRAEFIK_HOST} \
     --env-file=%S/state/secrets/dolibarr.env \
     --env-file=%S/state/ldap.env \
