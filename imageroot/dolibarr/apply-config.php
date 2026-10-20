@@ -210,7 +210,10 @@ function admin_group_logins($connection, string $group): ?array
     $name = ldap_escape($group, '', LDAP_ESCAPE_FILTER);
     if (env('NS8_LDAP_SCHEMA') === 'ad') {
         $result = @ldap_search($connection, env('NS8_LDAP_BASE_DN'), "(&(objectClass=group)(|(cn=$name)(sAMAccountName=$name)))", ['dn']);
-        $entries = $result ? ldap_get_entries($connection, $result) : ['count' => 0];
+        if ($result === false) {
+            fail('LDAP group search failed: ' . ldap_error($connection));
+        }
+        $entries = ldap_get_entries($connection, $result);
         if ($entries['count'] === 0) {
             return null;
         }
@@ -218,7 +221,10 @@ function admin_group_logins($connection, string $group): ?array
         return ldap_logins($connection, "(&(objectClass=user)(memberOf=$dn))");
     }
     $result = @ldap_search($connection, env('NS8_LDAP_BASE_DN'), "(&(objectClass=posixGroup)(cn=$name))", ['memberuid']);
-    $entries = $result ? ldap_get_entries($connection, $result) : ['count' => 0];
+    if ($result === false) {
+        fail('LDAP group search failed: ' . ldap_error($connection));
+    }
+    $entries = ldap_get_entries($connection, $result);
     if ($entries['count'] === 0) {
         return null;
     }
@@ -234,7 +240,7 @@ function apply_admin_flags(): void
     if (env('NS8_LDAP_DOMAIN') === '') {
         return;
     }
-    // Resolve the directory first: a bind failure exits and keeps the current flags
+    // Resolve the directory first: a bind or search failure exits and keeps the current flags
     $connection = ldap_bind_ns8();
     $ldap_users = ldap_logins($connection, env('NS8_LDAP_USERS_FILTER'));
     $group = env('NS8_ADMIN_GROUP');
