@@ -78,6 +78,10 @@ The module runs the Dolibarr script `sync_users_ldap2dolibarr.php` at each confi
 It creates the missing users and updates their name, taken from `displayName`, and email. Passwords are never copied: the domain checks them at each login.
 Users removed from the domain stay in Dolibarr with their history, and can no longer log in.
 
+The "Synchronize users now" button of the Settings page runs the sync at once. From the command line:
+
+    api-cli run sync-users --agent module/dolibarr1
+
 Members of `admin_group` get the Dolibarr administrator flag, the other domain users lose it.
 If the domain cannot be read, the flags are kept as they are.
 

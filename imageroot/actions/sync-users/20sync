@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+set -e
+
+# Redirect any output to the journal (stderr)
+exec 1>&2
+
+if [[ -z "${USER_DOMAIN}" ]]; then
+    echo "No user domain configured, nothing to synchronize"
+    exit 2
+fi
+
+# Same unit as the daily timer: it shares the apply-config lock and logs
+systemctl --user start dolibarr-ldap-sync.service
