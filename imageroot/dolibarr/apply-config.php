@@ -80,8 +80,11 @@ function apply_general_config(): void
             fail("cannot enable $module: " . implode(', ', $result['errors']));
         }
     }
-    // dolibarr_set_const encrypts it with the instance unique id
-    set_const('CRON_KEY', env('NS8_CRON_KEY'));
+    // From the container environment, like the cron timer. dolibarr_set_const encrypts it.
+    if (env('DOLI_CRON_KEY') === '') {
+        fail('DOLI_CRON_KEY is missing from the container environment');
+    }
+    set_const('CRON_KEY', env('DOLI_CRON_KEY'));
 
     if (env('NS8_SMTP_ENABLED') === '1') {
         $encryption = env('NS8_SMTP_ENCRYPTION');
