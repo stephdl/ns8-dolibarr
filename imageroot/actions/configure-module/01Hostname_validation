@@ -18,10 +18,15 @@ data = json.load(sys.stdin)
 
 # Setup default values
 host = data["host"]
-# Skip the test only when this instance already owns the route: a clone keeps the source host but has no route
-route = agent.get_route(os.environ['MODULE_ID'])
+module_id = os.environ['MODULE_ID']
+# Skip the test only when this instance owns the route: a clone keeps the source host but has no route.
+# With replace, core gives the new instance the old one's UUID and removes the old one only after the restore
+rdb = agent.redis_connect(use_replica=True)
+owners = [mid for mid, uuid in rdb.hgetall("cluster/module_uuid").items() if uuid == os.environ['MODULE_UUID']]
+if module_id not in owners:
+    owners.append(module_id)
 
-if route.get('host') != host and agent.http_route_in_use(domain=host):
+if not any(agent.get_route(mid).get('host') == host for mid in owners) and agent.http_route_in_use(domain=host):
     agent.set_status('validation-failed')
     json.dump([{'field':'host','parameter':'host','value':host,'error':'domain_already_used_in_traefik'}],fp=sys.stdout)
     sys.exit(2)

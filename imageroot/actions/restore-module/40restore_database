@@ -8,8 +8,12 @@
 set -e -o pipefail
 exec 1>&2 # Redirect any output to the journal (stderr)
 
+trap 'rm -rfv initdb.d/' EXIT
+
 mkdir -vp initdb.d
 mv -v dolibarr.sql initdb.d
+# The MariaDB entrypoint reads the dump as the mysql user, while the dump stays private to it
+podman unshare chown 999:999 initdb.d/dolibarr.sql
 # The MariaDB entrypoint sources this script after loading the dump: stop the temporary server and exit
 cat - >initdb.d/zz_dolibarr_restore.sh <<'EOS'
 mariadb --version
@@ -17,8 +21,6 @@ set -- true
 docker_temp_server_stop
 exit 0
 EOS
-
-trap 'rm -rfv initdb.d/' EXIT
 
 # Credentials come from the restored secrets: conf.php is rebuilt from them at each app start
 podman run \
