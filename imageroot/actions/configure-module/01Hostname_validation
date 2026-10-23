@@ -21,6 +21,10 @@ host = data["host"]
 # Skip the test only when this instance already owns the route: a clone keeps the source host but has no route
 route = agent.get_route(os.environ['MODULE_ID'])
 
+# A restore or clone with replace runs while the old instance still owns the route, core removes it afterwards
+if os.getenv('AGENT_TASK_USER') == os.getenv('AGENT_ID'):
+    sys.exit(0)
+
 if route.get('host') != host and agent.http_route_in_use(domain=host):
     agent.set_status('validation-failed')
     json.dump([{'field':'host','parameter':'host','value':host,'error':'domain_already_used_in_traefik'}],fp=sys.stdout)
