@@ -97,14 +97,25 @@ function apply_general_config(): void
         set_const('MAIN_MAIL_EMAIL_STARTTLS', $encryption === 'starttls' ? '1' : '');
         set_const('MAIN_MAIL_EMAIL_SMTP_ALLOW_SELF_SIGNED', env('NS8_SMTP_TLSVERIFY') === '1' ? '' : '1');
         set_const('NS8_SMTP_MANAGED', '1');
-    } elseif (getDolGlobalString('NS8_SMTP_MANAGED')) {
-        // Only undo what NS8 wrote: an SMTP server set by hand in Dolibarr stays
-        foreach (['MAIN_MAIL_SMTP_SERVER', 'MAIN_MAIL_SMTP_PORT', 'MAIN_MAIL_SMTPS_ID', 'MAIN_MAIL_SMTPS_PW',
-                  'MAIN_MAIL_EMAIL_TLS', 'MAIN_MAIL_EMAIL_STARTTLS', 'MAIN_MAIL_EMAIL_SMTP_ALLOW_SELF_SIGNED',
-                  'NS8_SMTP_MANAGED'] as $name) {
-            set_const($name, '');
+        if (getDolGlobalString('NS8_MAILS_DISABLED')) {
+            set_const('MAIN_DISABLE_ALL_MAILS', '');
+            set_const('NS8_MAILS_DISABLED', '');
         }
-        set_const('MAIN_MAIL_SENDMODE', 'mail');
+    } else {
+        if (getDolGlobalString('NS8_SMTP_MANAGED')) {
+            // Only undo what NS8 wrote: an SMTP server set by hand in Dolibarr stays
+            foreach (['MAIN_MAIL_SMTP_SERVER', 'MAIN_MAIL_SMTP_PORT', 'MAIN_MAIL_SMTPS_ID', 'MAIN_MAIL_SMTPS_PW',
+                      'MAIN_MAIL_EMAIL_TLS', 'MAIN_MAIL_EMAIL_STARTTLS', 'MAIN_MAIL_EMAIL_SMTP_ALLOW_SELF_SIGNED',
+                      'NS8_SMTP_MANAGED'] as $name) {
+                set_const($name, '');
+            }
+            set_const('MAIN_MAIL_SENDMODE', 'mail');
+        }
+        // The image has no sendmail: the PHP mail method fails on every send, with a fatal error
+        if (getDolGlobalString('MAIN_MAIL_SENDMODE', 'mail') === 'mail' && !getDolGlobalString('MAIN_DISABLE_ALL_MAILS')) {
+            set_const('MAIN_DISABLE_ALL_MAILS', '1');
+            set_const('NS8_MAILS_DISABLED', '1');
+        }
     }
     logmsg('General and mail settings applied (smtp ' . (env('NS8_SMTP_ENABLED') === '1' ? 'enabled' : 'disabled') . ')');
 }
