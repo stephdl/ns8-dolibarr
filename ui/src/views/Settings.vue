@@ -937,6 +937,6 @@ export default {
 
 // Same indent as the core UI for the fields a toggle shows
 .toggle-dependent {
-  padding-left: $spacing-07;
+  margin-left: $spacing-07;
 }
 </style>
