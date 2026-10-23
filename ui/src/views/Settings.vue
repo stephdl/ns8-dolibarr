@@ -71,6 +71,7 @@
             <NsInlineNotification
               v-if="isLetsEncryptCurrentlyEnabled && !isLetsEncryptEnabled"
               kind="warning"
+              class="toggle-dependent"
               :title="
                 core.$t('apps_lets_encrypt.lets_encrypt_disabled_warning')
               "
@@ -150,7 +151,11 @@
               :minLength="8"
               :disabled="stillLoading"
               @passwordValidation="onAdminPasswordValidation"
-              class="mg-bottom maxwidth"
+              :class="[
+                'mg-bottom',
+                'maxwidth',
+                { 'toggle-dependent': isAdminPasswordSet },
+              ]"
             />
 
             <!-- authentication -->
@@ -184,7 +189,7 @@
                   $t("settings.enabled")
                 }}</template>
               </NsToggle>
-              <template v-if="isLdapEnabled">
+              <div v-if="isLdapEnabled" class="toggle-dependent">
                 <NsInlineNotification
                   kind="info"
                   :title="$t('settings.ldap_info_title')"
@@ -287,7 +292,7 @@
                     :showCloseButton="false"
                   />
                 </template>
-              </template>
+              </div>
             </template>
 
             <!-- notifications -->
@@ -928,5 +933,10 @@ export default {
 
 .maxwidth {
   max-width: 38rem;
+}
+
+// Same indent as the core UI for the fields a toggle shows
+.toggle-dependent {
+  padding-left: $spacing-07;
 }
 </style>
