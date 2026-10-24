@@ -9,7 +9,7 @@ Features:
 
 - the password of the local `admin` account is set from NS8, it replaces the random password set at installation
 - login with Dolibarr local accounts and with the users of one NS8 user domain (OpenLDAP or Active Directory)
-- domain users are synchronized into Dolibarr at each configuration, and every day with the daily synchronization
+- domain users are synchronized into Dolibarr at each configuration, and every hour with the hourly synchronization
 - members of an optional domain group get the Dolibarr administrator flag
 - emails through the cluster smarthost, when it is configured
 - Dolibarr scheduled jobs run every 5 minutes
@@ -39,7 +39,7 @@ Launch `configure-module` with the following parameters:
 - `language`: default Dolibarr language, one of `auto` (browser language), `en_US`, `en_GB`, `fr_FR`, `it_IT`, `de_DE`, `es_ES`, `pt_PT`, `pt_BR`, `eu_ES`, `nl_NL`
 - `user_domain`: NS8 user domain for LDAP login, empty for local accounts only
 - `admin_group`: group of the user domain whose members get the Dolibarr administrator flag, empty for none
-- `ldap_sync`: synchronize domain users every day (true/false)
+- `ldap_sync`: synchronize domain users every hour (true/false)
 - `mail_from`: sender of Dolibarr emails, empty for `noreply@<host>`
 - `admin_password`: password of the Dolibarr local `admin` account, at least 8 characters with lowercase and uppercase letters, a number and a symbol. Required at the first configuration, optional later
 

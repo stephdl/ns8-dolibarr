@@ -95,7 +95,7 @@ def run_php(settings):
 def sync_users():
     """Return False if the LDAP script reported errors."""
     # Dolibarr does not create users at login: without a sync no domain user can log in.
-    # LDAP_SYNC only enables the daily timer.
+    # LDAP_SYNC only enables the hourly timer.
     if os.getenv("USER_DOMAIN", "") == "":
         return True
     # The local admin keeps its own password even if the domain has an admin user
@@ -120,7 +120,7 @@ if not is_running():
     print("dolibarr-app.service is not running, settings are applied when it starts", file=sys.stderr)
     sys.exit(0)
 
-# The app start, configure-module, events and the daily sync can call this at the same time:
+# The app start, configure-module, events and the hourly sync can call this at the same time:
 # two runs would migrate the database twice and race on secrets/admin_password
 lock = open("apply-config.lock", "w")
 fcntl.flock(lock, fcntl.LOCK_EX)
@@ -129,7 +129,7 @@ wait_for_dolibarr()
 
 if "--sync" in sys.argv[1:]:
     ldap_ok = sync_users()
-    # One bad domain user must not fail the sync of the others, nor the daily timer unit
+    # One bad domain user must not fail the sync of the others, nor the hourly timer unit
     if report:
         json.dump({"ldap_errors": not ldap_ok}, fp=sys.stdout)
     sys.exit(0)

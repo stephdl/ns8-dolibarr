@@ -4,11 +4,11 @@
 #
 
 [Unit]
-Description=Daily synchronization of Dolibarr users with the NS8 user domain
+Description=Hourly synchronization of Dolibarr users with the NS8 user domain
 
 [Timer]
-OnCalendar=daily
-RandomizedDelaySec=1h
+OnCalendar=hourly
+RandomizedDelaySec=5min
 Persistent=true
 
 [Install]

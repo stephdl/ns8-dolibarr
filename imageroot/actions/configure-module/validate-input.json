@@ -57,7 +57,7 @@
         },
         "ldap_sync": {
             "type": "boolean",
-            "description": "Create and update the Dolibarr users of the user domain at configuration and every day"
+            "description": "Create and update the Dolibarr users of the user domain at configuration and every hour"
         },
         "mail_from": {
             "type": "string",

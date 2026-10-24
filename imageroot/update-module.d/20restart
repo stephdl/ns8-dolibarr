@@ -17,3 +17,6 @@ systemctl --user try-restart dolibarr.service mariadb-app.service dolibarr-app.s
 if [[ "${was_active}" == "active" ]]; then
     systemctl --user start dolibarr.service mariadb-app.service dolibarr-app.service
 fi
+
+# Re-arm the sync timer so an existing install picks up the new schedule
+systemctl --user try-restart dolibarr-ldap-sync.timer
