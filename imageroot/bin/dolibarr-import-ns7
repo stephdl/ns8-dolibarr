@@ -1,0 +1,96 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Import the archive made by ns7/dolibarr-export into this instance.
+# Usage: runagent -m dolibarr1 dolibarr-import-ns7 [--force] < dolibarr-ns7-export.tar.gz
+# It replaces the database and the files, so it refuses an instance that already holds data unless --force.
+
+set -e
+
+exec 1>&2
+
+force=no
+if [ "$1" = "--force" ]; then
+    force=yes
+fi
+
+if [ -t 0 ]; then
+    echo "Pass the archive on stdin: runagent -m ${MODULE_ID} dolibarr-import-ns7 < dolibarr-ns7-export.tar.gz"
+    exit 1
+fi
+
+# Not /tmp: it can be a small tmpfs and the archive holds all the documents
+work=$(mktemp -d -p "${PWD}" ns7-import.XXXXXX)
+trap 'rm -rf "${work}"' EXIT
+
+echo "Extracting the archive..."
+tar xzf - -C "${work}"
+for file in dolibarr.sql instance_unique_id documents.tar.gz custom.tar.gz; do
+    if [ ! -s "${work}/${file}" ]; then
+        echo "${file} is missing from the archive, was it made by ns7/dolibarr-export?"
+        exit 1
+    fi
+done
+instance_id=$(cat "${work}/instance_unique_id")
+if [[ ! "${instance_id}" =~ ^[0-9a-zA-Z]+$ ]]; then
+    echo "Invalid instance_unique_id in the archive"
+    exit 1
+fi
+
+sql() {
+    podman exec -i mariadb-app sh -c 'exec mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" "$@"' mariadb "$@"
+}
+
+systemctl --user start dolibarr
+# Wait for the first start to finish, its database install would race with the import
+systemctl --user start dolibarr-apply-config || :
+until podman exec mariadb-app mariadb-admin ping -h127.0.0.1 --protocol=tcp --skip-ssl --silent; do
+    sleep 2
+done
+
+if [ "${force}" = no ]; then
+    # Users are not counted: the domain synchronization fills them on a brand new instance
+    records=$(sql -N dolibarr -e "SELECT (SELECT COUNT(*) FROM llx_societe) + (SELECT COUNT(*) FROM llx_product) + (SELECT COUNT(*) FROM llx_projet)" 2>/dev/null || echo 0)
+    if [ "${records:-0}" -gt 0 ]; then
+        echo "This instance already holds Dolibarr data, run again with --force to replace it"
+        exit 1
+    fi
+fi
+
+systemctl --user stop dolibarr-cron.timer
+
+echo "Loading the NS7 database..."
+sql -e "DROP DATABASE IF EXISTS dolibarr; CREATE DATABASE dolibarr"
+sql dolibarr < "${work}/dolibarr.sql"
+
+echo "Copying documents and custom modules..."
+# Without install.lock the image entrypoint would install a new empty database
+podman exec -i -u root dolibarr-app sh -c '
+    find /var/www/documents -mindepth 1 -delete
+    tar xzf - -C /var/www/documents
+    touch /var/www/documents/install.lock
+    chown -R www-data:www-data /var/www/documents' < "${work}/documents.tar.gz"
+podman exec -i -u root dolibarr-app sh -c '
+    find /var/www/html/custom -mindepth 1 -delete
+    tar xzf - -C /var/www/html/custom
+    chown -R www-data:www-data /var/www/html/custom' < "${work}/custom.tar.gz"
+
+# Dolibarr encrypts stored passwords with this id, a new one would make them unreadable
+sed -i "s/^DOLI_INSTANCE_UNIQUE_ID=.*/DOLI_INSTANCE_UNIQUE_ID=${instance_id}/" secrets/dolibarr.env
+
+# The admin account now has its NS7 password, the UI asks for a new one
+python3 -c 'import agent; agent.set_env("ADMIN_PASSWORD_SET", False)'
+
+echo "Restarting Dolibarr and upgrading the database, it can take several minutes..."
+systemctl --user restart dolibarr
+if ! systemctl --user start dolibarr-apply-config; then
+    echo "The upgrade failed, see the dolibarr-apply-config lines in the module logs"
+    exit 1
+fi
+systemctl --user start dolibarr-cron.timer
+
+echo "Import completed. Set a new admin password from the Settings page of the module."

@@ -117,6 +117,40 @@ An app stopped during the update runs the upgrade at its next start.
 Renovate opens the image update PRs. MariaDB stays on the 12.3 LTS branch. Only plain `x.y.z` Dolibarr tags are proposed, and major upgrades are not merged automatically.
 The About page shows the Dolibarr version next to the module version.
 
+## Migrate from NethServer 7
+
+The NS7 migration tool does not know nethserver-dolibarr, so two scripts move the data.
+They were tested from nethserver-dolibarr 17.0.2 to Dolibarr 24.0.3.
+
+If Dolibarr uses the NS7 users, migrate the account provider first.
+Dolibarr matches its users by login, `uid` for OpenLDAP and `sAMAccountName` for Active Directory.
+NS7 used `cn` with Active Directory, which is the same value for the users created from the NS7 UI.
+A user whose `cn` differs, for example one created with Windows tools, comes back as a new Dolibarr user.
+
+On NS7, download and run the export script.
+It writes the database, the documents, the custom modules and the encryption id into `/root/dolibarr-ns7-export.tar.gz`:
+
+    curl -fsSLo /root/dolibarr-export https://raw.githubusercontent.com/stephdl/ns8-dolibarr/main/ns7/dolibarr-export
+    bash /root/dolibarr-export
+
+Copy the archive to the NS8 node.
+Install the module and configure it from the UI: host name, user domain and the other settings.
+Find the module id, it is also shown on the app page of the UI:
+
+    runagent -l | grep dolibarr
+
+Then import the archive, replace `dolibarr1` with the module id:
+
+    runagent -m dolibarr1 dolibarr-import-ns7 < dolibarr-ns7-export.tar.gz
+
+The import replaces the database and the files, then upgrades the database one major version at a time.
+It refuses an instance that already holds third parties, products or projects, add `--force` to replace them.
+
+After the import, the admin account has its NS7 password.
+Set a new one from the Settings page, the module asks for it.
+Modules in `custom` written for PHP 7.3 may fail on PHP 8, disable them if a page breaks.
+The archive holds the whole database in clear text, delete it on both servers.
+
 ## Debug
 
 Show the module environment:
