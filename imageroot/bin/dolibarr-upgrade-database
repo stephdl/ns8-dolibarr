@@ -29,16 +29,31 @@ if [ -z "${db_version}" ] || [ "${db_version}" = "${DOLI_VERSION}" ]; then
 fi
 
 echo "Upgrading the Dolibarr database from ${db_version} to ${DOLI_VERSION}"
-# The upgrade scripts refuse to run while install.lock exists without this file
-touch /var/www/documents/upgrade.unlock
 trap 'rm -f /var/www/documents/upgrade.unlock' EXIT
 log=/var/www/documents/ns8-upgrade.log
 : > "${log}"
-for script in upgrade.php upgrade2.php step5.php; do
-    if ! php "${script}" "${db_version}" "${DOLI_VERSION}" >> "${log}" 2>&1; then
-        echo "Dolibarr ${script} failed, see documents/ns8-upgrade.log. The dump taken before the update is state/dolibarr-before-update.sql"
-        exit 1
-    fi
+
+# A single run across several majors applies only the first and the last migration files
+steps=""
+major=$((${db_version%%.*} + 1))
+while [ "${major}" -lt "${DOLI_VERSION%%.*}" ]; do
+    steps="${steps} ${major}.0.0"
+    major=$((major + 1))
 done
-echo "Dolibarr database upgraded to ${DOLI_VERSION}"
+steps="${steps} ${DOLI_VERSION}"
+
+from=${db_version}
+for to in ${steps}; do
+    for script in upgrade.php upgrade2.php step5.php; do
+        # The scripts refuse to run while install.lock exists without this file, and each run deletes it
+        touch /var/www/documents/upgrade.unlock
+        # A locked script still exits with 0, so its refusal message is checked too
+        if ! php "${script}" "${from}" "${to}" >> "${log}" 2>&1 || grep -q "pages have been disabled" "${log}"; then
+            echo "Dolibarr ${script} from ${from} to ${to} failed, see documents/ns8-upgrade.log. The dump taken before the update is state/dolibarr-before-update.sql"
+            exit 1
+        fi
+    done
+    echo "Dolibarr database upgraded from ${from} to ${to}"
+    from=${to}
+done
 EOS
