@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Export nethserver-dolibarr from NethServer 7 into one archive for the NS8 module.
+# Usage: dolibarr-export [archive]
+# Import it on NS8 with: runagent -m dolibarr1 dolibarr-import-ns7 < archive
+
+set -e
+
+archive=${1:-/root/dolibarr-ns7-export.tar.gz}
+root=/usr/share/dolibarr
+conf=${root}/htdocs/conf/conf.php
+
+if [ ! -f "${conf}" ]; then
+    echo "nethserver-dolibarr is not installed: ${conf} is missing" >&2
+    exit 1
+fi
+
+work=$(mktemp -d)
+trap 'rm -rf "${work}"' EXIT
+chmod 700 "${work}"
+
+echo "Dumping the dolibarr database..." >&2
+mysqldump --single-transaction --routines dolibarr > "${work}/dolibarr.sql"
+
+# Dolibarr encrypts stored passwords with this id, NS8 must keep it to read them
+sed -n "s/^\$dolibarr_main_instance_unique_id='\(.*\)';/\1/p" "${conf}" > "${work}/instance_unique_id"
+if [ ! -s "${work}/instance_unique_id" ]; then
+    echo "instance_unique_id not found in ${conf}" >&2
+    exit 1
+fi
+
+echo "Archiving documents and custom modules..." >&2
+tar czf "${work}/documents.tar.gz" -C "${root}/documents" .
+tar czf "${work}/custom.tar.gz" -C "${root}/htdocs/custom" .
+
+(umask 077; tar czf "${archive}" -C "${work}" dolibarr.sql instance_unique_id documents.tar.gz custom.tar.gz)
+
+echo "Archive ready: ${archive}" >&2
+echo "It holds the whole database in clear text, delete it once imported." >&2
+echo "Changes made in Dolibarr on NS7 from now on are not exported, disable it with:" >&2
+echo "  config setprop dolibarr status disabled && signal-event nethserver-dolibarr-update" >&2
